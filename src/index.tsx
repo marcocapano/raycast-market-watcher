@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon, MenuBarExtra, open } from "@raycast/api";
-import yahooFinance from "yahoo-finance2"; // Import yahoo-finance2
-
-type Stock = {
-  symbol: string,
-  currency: string | null,
-  price: number | null,
-  priceChange: number | null,
-  priceChangePercent: number | null,
-  name: string
-};
+import { fetchStockPrice } from "./data";
 
 const useStockPrices = () => {
   const [state, setState] = useState<{ stocks: Stock[]; isLoading: boolean }>({
@@ -22,26 +13,11 @@ const useStockPrices = () => {
   });
 
   useEffect(() => {
-    const fetchStockPrice = async (symbol: string) => {
-      try {
-        const quote = await yahooFinance.quoteSummary(symbol);
-        return { 
-          currentPrice: quote.price?.marketState === "PRE" ? quote.price?.preMarketPrice || null : quote.price?.regularMarketPrice || null,
-          currency: quote.price?.currencySymbol || null,
-          priceChange: quote.price?.marketState === "PRE" ? quote.price?.preMarketChange || null : quote.price?.regularMarketChange || null,
-          priceChangePercent: quote.price?.marketState === "PRE" ? quote.price?.preMarketChangePercent || null : quote.price?.regularMarketChangePercent || null
-        };
-      } catch (error) {
-        console.error(`Error fetching data for ${symbol}:`, error);
-        return null;
-      }
-    };
-
     const fetchStockPrices = async () => {
       const updatedStocks = await Promise.all(
       state.stocks.map(async (stock) => {
         const stockInfo = await fetchStockPrice(stock.symbol);
-
+  
         if (stockInfo) {
           const { currentPrice = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
           return { ...stock, price: currentPrice, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
