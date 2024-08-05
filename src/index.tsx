@@ -1,35 +1,35 @@
 import { useEffect, useState } from "react";
-import { Icon, MenuBarExtra, open } from "@raycast/api";
-import { fetchStockPrice } from "./data";
+import { Icon, MenuBarExtra, open, openExtensionPreferences } from "@raycast/api";
+import { Stock, fetchStockPrice } from "./data";
+import { getTickersFromPreferences } from "./settings";
 
 const useStockPrices = () => {
   const [state, setState] = useState<{ stocks: Stock[]; isLoading: boolean }>({
-    stocks: [
-      { symbol: "SPOT", currency: null, price: null, priceChange: null, priceChangePercent: null, name: "Spotify" },
-      { symbol: "VWRL.L", currency: null, price: null, priceChange: null, priceChangePercent: null, name: "Vanguard FTSE All-World" }, // VWRL on London stock exchange
-      { symbol: "VUSA.L", currency: null, price: null, priceChange: null, priceChangePercent: null, name: "Vanguard S&P 500" } // VUSA on London stock exchange
-    ],
+    stocks: [],
     isLoading: true,
   });
 
   useEffect(() => {
     const fetchStockPrices = async () => {
+      const tickers = getTickersFromPreferences();
       const updatedStocks = await Promise.all(
-      state.stocks.map(async (stock) => {
-        const stockInfo = await fetchStockPrice(stock.symbol);
-  
-        if (stockInfo) {
-          const { currentPrice = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
-          return { ...stock, price: currentPrice, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
-        } else {
-          // if no value, keep last known value
-          return stock;
-        }
-      })
+        tickers.map(async (ticker) => {
+          const stockInfo = await fetchStockPrice(ticker);
+      
+          if (stockInfo) {
+            const { currentPrice = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
+            return { symbol: ticker, name: ticker, price: currentPrice, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
+          } else {
+            // if no value, keep last known value
+            return state.stocks.find((stock) => stock.symbol === ticker)
+             || { symbol: ticker, name: ticker, price: null, currency: null, priceChange: null, priceChangePercent: null };
+          }
+        })
       );
       setState({ stocks: updatedStocks, isLoading: false });
     };
 
+    console.log(getTickersFromPreferences());
     fetchStockPrices();
   }, []);
 
@@ -51,14 +51,18 @@ export default function Command() {
 
   return (
     <MenuBarExtra icon={Icon.BankNote} isLoading={isLoading}>
-      <MenuBarExtra.Item title="Stock Prices" />
-      {stocks.map((stock) => (
-        <MenuBarExtra.Item
-          key={stock.symbol}
-          title={`${stock.name}: ${stock.currency}${stock.price?.toFixed(2) || "N/A"} (${formatPercentage(stock.priceChangePercent)}, ${stock.priceChange?.toFixed(2) || ""})`}
-          onAction={() => openAction(stock)}
-        />
-      ))}
+      <MenuBarExtra.Section title="Tickers">
+        {stocks.map((stock) => (
+          <MenuBarExtra.Item
+            key={stock.symbol}
+            title={`${stock.name}: ${stock.currency}${stock.price?.toFixed(2) || "N/A"} (${formatPercentage(stock.priceChangePercent)}, ${stock.priceChange?.toFixed(2) || ""})`}
+            onAction={() => openAction(stock)}
+          />
+        ))}
+      </MenuBarExtra.Section>
+      <MenuBarExtra.Section>
+        <MenuBarExtra.Item title="Change tracked tickers" onAction={() => openExtensionPreferences()} />
+      </MenuBarExtra.Section>      
     </MenuBarExtra>
   );
 }

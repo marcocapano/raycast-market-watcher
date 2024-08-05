@@ -2,7 +2,7 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "market-watcher",
   "title": "market watcher",
-  "description": "Tracks SPOT, VWRL, VUSA",
+  "description": "Tracks any ticker using Yahoo Finance API",
   "icon": "command-icon.png",
   "author": "marco_capano",
   "categories": [
@@ -16,6 +16,16 @@
       "description": "Template for showing a menu bar extra",
       "mode": "menu-bar"
     }
+  ],
+  "preferences": [
+      {
+        "name": "tickers",
+        "type": "textfield",
+        "description": "Comma separated list of tickers to track",
+        "placeholder": "SPY, VOO, VWRL.L",
+        "default": "SPY",
+        "required": true
+      }
   ],
   "dependencies": {
     "@raycast/api": "^1.80.0",
