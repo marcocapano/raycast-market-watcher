@@ -3,10 +3,17 @@ import yahooFinance from "yahoo-finance2"; // Import yahoo-finance2
 export type Stock = {
     symbol: string,
     currency: string | null,
-    price: number | null,
-    priceChange: number | null,
-    priceChangePercent: number | null,
-    name: string
+    regularMarketPrice: number | null,
+    preMarketPrice: number | null,
+    postMarketPrice: number | null,
+    regularMarketChange: number | null,
+    preMarketChange: number | null,
+    postMarketChange: number | null,
+    regularMarketChangePercent: number | null,
+    preMarketChangePercent: number | null,
+    postMarketChangePercent: number | null,
+    name: string,
+    marketState: string | null
 };
 
 export async function fetchStockPrice(symbol: string): Promise<Stock | null> {
@@ -14,11 +21,18 @@ export async function fetchStockPrice(symbol: string): Promise<Stock | null> {
         const quote = await yahooFinance.quoteSummary(symbol);
         return {
             symbol: symbol,
-            price: quote.price?.marketState === "PRE" ? quote.price?.preMarketPrice || null : quote.price?.regularMarketPrice || null,
+            regularMarketPrice: quote.price?.regularMarketPrice || null,
+            preMarketPrice: quote.price?.preMarketPrice || null,
+            postMarketPrice: quote.price?.postMarketPrice || null,
             currency: quote.price?.currencySymbol || null,
-            priceChange: quote.price?.marketState === "PRE" ? quote.price?.preMarketChange || null : quote.price?.regularMarketChange || null,
-            priceChangePercent: quote.price?.marketState === "PRE" ? quote.price?.preMarketChangePercent || null : quote.price?.regularMarketChangePercent || null,
-            name: quote.price?.shortName || symbol
+            regularMarketChange: quote.price?.regularMarketChange || null,
+            preMarketChange: quote.price?.preMarketChange || null,
+            postMarketChange: quote.price?.postMarketChange || null,
+            regularMarketChangePercent: quote.price?.regularMarketChangePercent || null,
+            preMarketChangePercent: quote.price?.preMarketChangePercent || null,
+            postMarketChangePercent: quote.price?.postMarketChangePercent || null,
+            name: quote.price?.shortName || symbol,
+            marketState: quote.price?.marketState || null
         };
     } catch (error) {
         console.error(`Error fetching data for ${symbol}:`, error);

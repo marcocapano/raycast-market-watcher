@@ -3,6 +3,24 @@ import { Icon, MenuBarExtra, open, openExtensionPreferences } from "@raycast/api
 import { Stock, fetchStockPrice } from "./data";
 import { getTickersFromPreferences } from "./settings";
 
+function createDefaultStock(ticker: string): Stock {
+  return {
+    symbol: ticker,
+    name: ticker,
+    preMarketPrice: null,
+    preMarketChange: null,
+    preMarketChangePercent: null,
+    regularMarketPrice: null,
+    regularMarketChange: null,
+    regularMarketChangePercent: null,
+    postMarketPrice: null,
+    postMarketChange: null,
+    postMarketChangePercent: null,
+    marketState: null,
+    currency: null
+  };
+}
+
 const useStockPrices = () => {
   const [state, setState] = useState<{ stocks: Stock[]; isLoading: boolean }>({
     stocks: [],
@@ -15,15 +33,7 @@ const useStockPrices = () => {
       const updatedStocks = await Promise.all(
         tickers.map(async (ticker) => {
           const stockInfo = await fetchStockPrice(ticker);
-      
-          if (stockInfo) {
-            const { price = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
-            return { symbol: ticker, name: ticker, price: price, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
-          } else {
-            // if no value, keep last known value
-            return state.stocks.find((stock) => stock.symbol === ticker)
-             || { symbol: ticker, name: ticker, price: null, currency: null, priceChange: null, priceChangePercent: null };
-          }
+          return stockInfo || state.stocks.find((stock) => stock.symbol === ticker) || createDefaultStock(ticker);
         })
       );
       setState({ stocks: updatedStocks, isLoading: false });
@@ -38,28 +48,78 @@ const useStockPrices = () => {
 
 export default function Command() {
   const { stocks, isLoading } = useStockPrices();
+  
   const formatPercentage = (percentage: number | null) => {
-    if (percentage === null) {
-      return "";
-    }
+    if (percentage === null || percentage === undefined) return "";
     return (percentage * 100).toFixed(2).concat("%");
+  }
+
+  const formatPrice = (priceData: { price: number | null, priceChange: number | null, priceChangePercent: number | null } | null) => {
+    if (!priceData || priceData.price === null || priceData.price === undefined) return "N/A";
+    const changePercent = priceData.priceChangePercent !== null && priceData.priceChangePercent !== undefined
+      ? formatPercentage(priceData.priceChangePercent)
+      : "";
+    const change = priceData.priceChange !== null && priceData.priceChange !== undefined
+      ? priceData.priceChange.toFixed(2)
+      : "";
+    return `${priceData.price.toFixed(2)} (${changePercent}, ${change})`;
   }
 
   const openAction = (stock: Stock) => {
     open(`https://finance.yahoo.com/quote/${stock.symbol}`);
   }
 
+  const preMarketStocks = stocks.filter(stock => stock.marketState === 'PRE');
+  const marketStocks = stocks.filter(stock => stock.marketState === 'REGULAR');
+  const postMarketStocks = stocks.filter(stock => stock.marketState === 'POST');
+
   return (
     <MenuBarExtra icon={Icon.BankNote} isLoading={isLoading}>
-      <MenuBarExtra.Section title="Tickers">
-        {stocks.map((stock) => (
-          <MenuBarExtra.Item
-            key={stock.symbol}
-            title={`${stock.name}: ${stock.currency}${stock.price?.toFixed(2) || "N/A"} (${formatPercentage(stock.priceChangePercent)}, ${stock.priceChange?.toFixed(2) || ""})`}
-            onAction={() => openAction(stock)}
-          />
-        ))}
-      </MenuBarExtra.Section>
+      {preMarketStocks.length > 0 && (
+        <MenuBarExtra.Section title="Pre-Market">
+          {preMarketStocks.map((stock) => (
+            <MenuBarExtra.Item
+              key={stock.symbol}
+              title={`${stock.symbol}: ${stock.currency || ""}${formatPrice({
+                price: stock.preMarketPrice,
+                priceChange: stock.preMarketChange,
+                priceChangePercent: stock.preMarketChangePercent
+              })}`}
+              onAction={() => openAction(stock)}
+            />
+          ))}
+        </MenuBarExtra.Section>
+      )}
+      {marketStocks.length > 0 && (
+        <MenuBarExtra.Section title="Market">
+          {marketStocks.map((stock) => (
+            <MenuBarExtra.Item
+              key={stock.symbol}
+              title={`${stock.symbol}: ${stock.currency || ""}${formatPrice({
+                price: stock.regularMarketPrice,
+                priceChange: stock.regularMarketChange,
+                priceChangePercent: stock.regularMarketChangePercent
+              })}`}
+              onAction={() => openAction(stock)}
+            />
+          ))}
+        </MenuBarExtra.Section>
+      )}
+      {postMarketStocks.length > 0 && (
+        <MenuBarExtra.Section title="Post-Market">
+          {postMarketStocks.map((stock) => (
+            <MenuBarExtra.Item
+              key={stock.symbol}
+              title={`${stock.symbol}: ${stock.currency || ""}${formatPrice({
+                price: stock.postMarketPrice,
+                priceChange: stock.postMarketChange,
+                priceChangePercent: stock.postMarketChangePercent
+              })}`}
+              onAction={() => openAction(stock)}
+            />  
+          ))}
+        </MenuBarExtra.Section>
+      )}
       <MenuBarExtra.Section>
         <MenuBarExtra.Item title="Change tracked tickers" onAction={() => openExtensionPreferences()} />
       </MenuBarExtra.Section>      
