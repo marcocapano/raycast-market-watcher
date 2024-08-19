@@ -12,11 +12,13 @@ export type Stock = {
 export async function fetchStockPrice(symbol: string): Promise<Stock | null> {
     try {
         const quote = await yahooFinance.quoteSummary(symbol);
-        return { 
-            currentPrice: quote.price?.marketState === "PRE" ? quote.price?.preMarketPrice || null : quote.price?.regularMarketPrice || null,
+        return {
+            symbol: symbol,
+            price: quote.price?.marketState === "PRE" ? quote.price?.preMarketPrice || null : quote.price?.regularMarketPrice || null,
             currency: quote.price?.currencySymbol || null,
             priceChange: quote.price?.marketState === "PRE" ? quote.price?.preMarketChange || null : quote.price?.regularMarketChange || null,
-            priceChangePercent: quote.price?.marketState === "PRE" ? quote.price?.preMarketChangePercent || null : quote.price?.regularMarketChangePercent || null
+            priceChangePercent: quote.price?.marketState === "PRE" ? quote.price?.preMarketChangePercent || null : quote.price?.regularMarketChangePercent || null,
+            name: quote.price?.shortName || symbol
         };
     } catch (error) {
         console.error(`Error fetching data for ${symbol}:`, error);

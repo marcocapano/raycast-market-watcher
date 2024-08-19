@@ -17,8 +17,8 @@ const useStockPrices = () => {
           const stockInfo = await fetchStockPrice(ticker);
       
           if (stockInfo) {
-            const { currentPrice = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
-            return { symbol: ticker, name: ticker, price: currentPrice, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
+            const { price = null, currency = null, priceChange = null, priceChangePercent = null } = stockInfo;
+            return { symbol: ticker, name: ticker, price: price, currency: currency, priceChange: priceChange, priceChangePercent: priceChangePercent };
           } else {
             // if no value, keep last known value
             return state.stocks.find((stock) => stock.symbol === ticker)
