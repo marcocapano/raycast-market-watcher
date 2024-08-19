@@ -39,7 +39,6 @@ const useStockPrices = () => {
       setState({ stocks: updatedStocks, isLoading: false });
     };
 
-    console.log(getTickersFromPreferences());
     fetchStockPrices();
   }, []);
 
@@ -55,14 +54,23 @@ export default function Command() {
   }
 
   const formatPrice = (priceData: { price: number | null, priceChange: number | null, priceChangePercent: number | null } | null) => {
-    if (!priceData || priceData.price === null || priceData.price === undefined) return "N/A";
-    const changePercent = priceData.priceChangePercent !== null && priceData.priceChangePercent !== undefined
-      ? formatPercentage(priceData.priceChangePercent)
-      : "";
-    const change = priceData.priceChange !== null && priceData.priceChange !== undefined
-      ? priceData.priceChange.toFixed(2)
-      : "";
-    return `${priceData.price.toFixed(2)} (${changePercent}, ${change})`;
+    if (!priceData || priceData.price === null) return "N/A";
+
+    if (priceData.priceChangePercent === null && priceData.priceChange !== null) {
+      return `${priceData.price.toFixed(2)} (${priceData.priceChange.toFixed(2)})`;
+    }
+
+    if (priceData.priceChangePercent !== null && priceData.priceChange === null) {
+      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)})`;
+    }
+
+    if (priceData.priceChangePercent !== null && priceData.priceChange !== null) {
+      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)}, ${priceData.priceChange.toFixed(2)})`;
+    } else {
+      return priceData.price.toFixed(2);
+    }
+
+    return "N/A";
   }
 
   const openAction = (stock: Stock) => {
@@ -70,7 +78,6 @@ export default function Command() {
   }
 
   const preMarketStocks = stocks.filter(stock => stock.marketState === 'PRE');
-  const marketStocks = stocks.filter(stock => stock.marketState === 'REGULAR');
   const postMarketStocks = stocks.filter(stock => stock.marketState === 'POST');
 
   return (
@@ -90,16 +97,16 @@ export default function Command() {
           ))}
         </MenuBarExtra.Section>
       )}
-      {marketStocks.length > 0 && (
+      {stocks.length > 0 && (
         <MenuBarExtra.Section title="Market">
-          {marketStocks.map((stock) => (
+          {stocks.map((stock) => (
             <MenuBarExtra.Item
               key={stock.symbol}
               title={`${stock.symbol}: ${stock.currency || ""}${formatPrice({
                 price: stock.regularMarketPrice,
                 priceChange: stock.regularMarketChange,
                 priceChangePercent: stock.regularMarketChangePercent
-              })}`}
+              })}${stock.marketState === 'REGULAR' ? "" : " (Price at close)"}`}
               onAction={() => openAction(stock)}
             />
           ))}
