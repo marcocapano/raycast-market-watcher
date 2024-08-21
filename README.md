@@ -2,4 +2,4 @@
 
 Tracks SPOT, VWRL, VUSA
 
-<img width="452" alt="A screenshot of a macOS Menu Bar extension that displays live stock prices for SPOT, VWRL, VUSA" src="https://github.com/user-attachments/assets/cb336af1-9977-4b09-85b1-e23a2a58aa6b">
+<img width="373" alt="A screenshot of a macOS Menu Bar extension that displays live stock prices for SPOT, VWRL, VUSA" src="https://github.com/user-attachments/assets/0d6a7f63-09d8-47f7-abce-521e54803aea">
