@@ -50,14 +50,18 @@ export default function Command() {
   
   const formatPercentage = (percentage: number | null) => {
     if (percentage === null || percentage === undefined) return "";
-    return (percentage * 100).toFixed(2).concat("%");
+    const sign = percentage >= 0 ? "+" : "-";
+    return `${sign}${(Math.abs(percentage) * 100).toFixed(2)}%`;
   }
 
   const formatPrice = (priceData: { price: number | null, priceChange: number | null, priceChangePercent: number | null } | null) => {
     if (!priceData || priceData.price === null) return "N/A";
 
+    const priceChangeSign = priceData.priceChange >= 0 ? "+" : "-";
+    const priceChange = priceData.priceChange !== null ? `${priceChangeSign}${Math.abs(priceData.priceChange).toFixed(2)}` : "";
+
     if (priceData.priceChangePercent === null && priceData.priceChange !== null) {
-      return `${priceData.price.toFixed(2)} (${priceData.priceChange.toFixed(2)})`;
+      return `${priceData.price.toFixed(2)} (${priceChange})`;
     }
 
     if (priceData.priceChangePercent !== null && priceData.priceChange === null) {
@@ -65,7 +69,7 @@ export default function Command() {
     }
 
     if (priceData.priceChangePercent !== null && priceData.priceChange !== null) {
-      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)}, ${priceData.priceChange.toFixed(2)})`;
+      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)}, ${priceChange})`;
     } else {
       return priceData.price.toFixed(2);
     }
