@@ -3,6 +3,7 @@ import { Icon, MenuBarExtra, open, openExtensionPreferences } from "@raycast/api
 import { Stock, fetchStockPrice } from "./data";
 import { getTickersFromPreferences } from "./settings";
 import { retry } from "./retry";
+import useDebounce from "./useDebounce";
 
 function createDefaultStock(ticker: string): Stock {
   return {
@@ -23,36 +24,45 @@ function createDefaultStock(ticker: string): Stock {
 }
 
 const useStockPrices = () => {
-  const [state, setState] = useState<{ stocks: Stock[]; isLoading: boolean }>({
-    stocks: [],
-    isLoading: true,
-  });
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedIsLoading = useDebounce(isLoading, 500);
 
   useEffect(() => {
     const fetchStockPrices = async () => {
+      console.log("Fetching stock prices");
+      setIsLoading(true);
+      
       const tickers = getTickersFromPreferences();
       const updatedStocks = await Promise.all(
         tickers.map(async (ticker) => {
-          // Retry 3 times with 250ms delay
-          const stockInfo = await retry(() => fetchStockPrice(ticker), 3, 250);
-          return stockInfo || state.stocks.find((stock) => stock.symbol === ticker) || createDefaultStock(ticker);
+          const existingStock = stocks.find((stock) => stock.symbol === ticker);
+          try {
+            // Retry up to 5 times with 1 second delay to avoid rate limiting
+            return await retry(() => fetchStockPrice(ticker), 5, 1000);
+          } catch (error) {
+            console.error(`Failed to fetch stock price for ${ticker}:`, error);
+            return existingStock || createDefaultStock(ticker);
+          }
         })
       );
-      setState({ stocks: updatedStocks, isLoading: false });
+
+      setIsLoading(false);
+      setStocks(updatedStocks);
     };
 
     fetchStockPrices();
     
-    // Set up an interval to fetch prices every 10 seconds while looking at widget.
+    // Set up an interval to fetch prices every 5 seconds while looking at widget.
     // This would be too much for an app, but it's fine for a menu bar app since we expect
     // the widget to not always be in focus (visible).
-    const intervalId = setInterval(fetchStockPrices, 10 * 1000);
+    const intervalId = setInterval(fetchStockPrices, 5 * 1000);
 
     // Clean up the interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
 
-  return state;
+  return { stocks, isLoading: debouncedIsLoading };
 };
 
 export default function Command() {
@@ -83,8 +93,6 @@ export default function Command() {
     } else {
       return priceData.price.toFixed(2);
     }
-
-    return "N/A";
   }
 
   const openAction = (stock: Stock) => {
@@ -143,7 +151,12 @@ export default function Command() {
       )}
       <MenuBarExtra.Section>
         <MenuBarExtra.Item title="Change tracked tickers" onAction={() => openExtensionPreferences()} />
-      </MenuBarExtra.Section>      
+      </MenuBarExtra.Section>
+      {isLoading && (
+        <MenuBarExtra.Section>
+          <MenuBarExtra.Item title="Refreshing..." />
+        </MenuBarExtra.Section>      
+      )}
     </MenuBarExtra>
   );
 }
