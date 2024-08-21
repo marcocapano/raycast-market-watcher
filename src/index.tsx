@@ -4,6 +4,7 @@ import { Stock, fetchStockPrice } from "./data";
 import { getTickersFromPreferences } from "./settings";
 import { retry } from "./retry";
 import useDebounce from "./useDebounce";
+import formatPrice from "./formatting";
 
 function createDefaultStock(ticker: string): Stock {
   return {
@@ -68,33 +69,6 @@ const useStockPrices = () => {
 export default function Command() {
   const { stocks, isLoading } = useStockPrices();
   
-  const formatPercentage = (percentage: number | null) => {
-    if (percentage === null || percentage === undefined) return "";
-    const sign = percentage >= 0 ? "+" : "-";
-    return `${sign}${(Math.abs(percentage) * 100).toFixed(2)}%`;
-  }
-
-  const formatPrice = (priceData: { price: number | null, priceChange: number | null, priceChangePercent: number | null } | null) => {
-    if (!priceData || priceData.price === null) return "N/A";
-
-    const priceChangeSign = priceData.priceChange >= 0 ? "+" : "-";
-    const priceChange = priceData.priceChange !== null ? `${priceChangeSign}${Math.abs(priceData.priceChange).toFixed(2)}` : "";
-
-    if (priceData.priceChangePercent === null && priceData.priceChange !== null) {
-      return `${priceData.price.toFixed(2)} (${priceChange})`;
-    }
-
-    if (priceData.priceChangePercent !== null && priceData.priceChange === null) {
-      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)})`;
-    }
-
-    if (priceData.priceChangePercent !== null && priceData.priceChange !== null) {
-      return `${priceData.price.toFixed(2)} (${formatPercentage(priceData.priceChangePercent)}, ${priceChange})`;
-    } else {
-      return priceData.price.toFixed(2);
-    }
-  }
-
   const openAction = (stock: Stock) => {
     open(`https://finance.yahoo.com/quote/${stock.symbol}`);
   }
