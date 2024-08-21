@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Icon, MenuBarExtra, open, openExtensionPreferences } from "@raycast/api";
 import { Stock, fetchStockPrice } from "./data";
 import { getTickersFromPreferences } from "./settings";
+import { retry } from "./retry";
 
 function createDefaultStock(ticker: string): Stock {
   return {
@@ -32,7 +33,8 @@ const useStockPrices = () => {
       const tickers = getTickersFromPreferences();
       const updatedStocks = await Promise.all(
         tickers.map(async (ticker) => {
-          const stockInfo = await fetchStockPrice(ticker);
+          // Retry 3 times with 250ms delay
+          const stockInfo = await retry(() => fetchStockPrice(ticker), 3, 250);
           return stockInfo || state.stocks.find((stock) => stock.symbol === ticker) || createDefaultStock(ticker);
         })
       );

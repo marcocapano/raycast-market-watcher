@@ -16,7 +16,7 @@ export type Stock = {
     marketState: string | null
 };
 
-export async function fetchStockPrice(symbol: string): Promise<Stock | null> {
+export async function fetchStockPrice(symbol: string): Promise<Stock> {
     try {
         const quote = await yahooFinance.quoteSummary(symbol);
         return {
@@ -36,6 +36,6 @@ export async function fetchStockPrice(symbol: string): Promise<Stock | null> {
         };
     } catch (error) {
         console.error(`Error fetching data for ${symbol}:`, error);
-        return null;
+        throw error;
     }
 }
