@@ -42,6 +42,14 @@ const useStockPrices = () => {
     };
 
     fetchStockPrices();
+    
+    // Set up an interval to fetch prices every 10 seconds while looking at widget.
+    // This would be too much for an app, but it's fine for a menu bar app since we expect
+    // the widget to not always be in focus (visible).
+    const intervalId = setInterval(fetchStockPrices, 10 * 1000);
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   return state;
