@@ -6,6 +6,7 @@ import { retry } from "./retry";
 import useDebounce from "./useDebounce";
 import formatPrice from "./formatting";
 import { List, Cache } from "@raycast/api";
+import { useMemo } from 'react';
 
 function createDefaultStock(ticker: string): Stock {
   return {
@@ -29,14 +30,13 @@ const cache = new Cache();
 
 const useStockPrices = () => {
   const cacheKey = "lastStocksFetch";
-  const [stocks, setStocks] = useState<Stock[]>(() => {
-    const cachedData = cache.get(cacheKey);
-    const cachedStocks: Stock[] = cachedData ? JSON.parse(cachedData) : [];
-    return cachedStocks;
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const debouncedIsLoading = useDebounce(isLoading, 500);
+  const cachedData = JSON.parse(cache.get(cacheKey) ?? '{}');
+  const lastUpdated = cachedData.lastUpdated || null;
 
+  const [stocks, setStocks] = useState<Stock[]>(cachedData.stocks || []);
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedIsLoading = useDebounce(isLoading, 1000);
+  
   useEffect(() => {
     const fetchStockPrices = async () => {
       console.log("Fetching stock prices");
@@ -56,7 +56,8 @@ const useStockPrices = () => {
         })
       );
 
-      cache.set(cacheKey, JSON.stringify(updatedStocks));
+      const date = new Date().toISOString();
+      cache.set(cacheKey, JSON.stringify({ stocks: updatedStocks, lastUpdated: date }));
       setIsLoading(false);
       setStocks(updatedStocks);
     };
@@ -72,12 +73,20 @@ const useStockPrices = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  return { stocks, isLoading: debouncedIsLoading };
+  return { stocks, isLoading: debouncedIsLoading, lastUpdated };
 };
 
 export default function Command() {
-  const { stocks, isLoading } = useStockPrices();
+  const { stocks, isLoading, lastUpdated } = useStockPrices();
   
+  const formattedLastUpdated = useMemo(() => {
+    return lastUpdated
+      ? new Date(lastUpdated).toDateString() === new Date().toDateString()
+        ? new Date(lastUpdated).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })
+        : new Date(lastUpdated).toLocaleDateString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: true })
+      : '';
+  }, [lastUpdated]);
+
   const openAction = (stock: Stock) => {
     open(`https://finance.yahoo.com/quote/${stock.symbol}`);
   }
@@ -135,11 +144,11 @@ export default function Command() {
       <MenuBarExtra.Section>
         <MenuBarExtra.Item title="Change tracked tickers" onAction={() => openExtensionPreferences()} />
       </MenuBarExtra.Section>
-      {isLoading && (
-        <MenuBarExtra.Section>
-          <MenuBarExtra.Item title="Refreshing..." />
-        </MenuBarExtra.Section>      
-      )}
+        
+      <MenuBarExtra.Section>
+        <MenuBarExtra.Item title={`Last updated: ${formattedLastUpdated}`} />
+        {isLoading && <MenuBarExtra.Item title="Refreshing..." />}
+      </MenuBarExtra.Section>
     </MenuBarExtra>
   );
 }
