@@ -5,6 +5,7 @@ import { getTickersFromPreferences } from "./settings";
 import { retry } from "./retry";
 import useDebounce from "./useDebounce";
 import formatPrice from "./formatting";
+import { List, Cache } from "@raycast/api";
 
 function createDefaultStock(ticker: string): Stock {
   return {
@@ -24,8 +25,15 @@ function createDefaultStock(ticker: string): Stock {
   };
 }
 
+const cache = new Cache();
+
 const useStockPrices = () => {
-  const [stocks, setStocks] = useState<Stock[]>([]);
+  const cacheKey = "lastStocksFetch";
+  const [stocks, setStocks] = useState<Stock[]>(() => {
+    const cachedData = cache.get(cacheKey);
+    const cachedStocks: Stock[] = cachedData ? JSON.parse(cachedData) : [];
+    return cachedStocks;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const debouncedIsLoading = useDebounce(isLoading, 500);
 
@@ -48,6 +56,7 @@ const useStockPrices = () => {
         })
       );
 
+      cache.set(cacheKey, JSON.stringify(updatedStocks));
       setIsLoading(false);
       setStocks(updatedStocks);
     };
