@@ -80,11 +80,14 @@ export default function Command() {
   const { stocks, isLoading, lastUpdated } = useStockPrices();
   
   const formattedLastUpdated = useMemo(() => {
-    return lastUpdated
-      ? new Date(lastUpdated).toDateString() === new Date().toDateString()
-        ? new Date(lastUpdated).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })
-        : new Date(lastUpdated).toLocaleDateString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: true })
-      : '';
+    if (!lastUpdated) return '';
+    
+    const date = new Date(lastUpdated);
+    const isToday = date.toDateString() === new Date().toDateString();
+    
+    return isToday
+      ? date.toLocaleTimeString({ hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })
+      : date.toLocaleString({ weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: true });
   }, [lastUpdated]);
 
   const openAction = (stock: Stock) => {
