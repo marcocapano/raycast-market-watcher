@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "market-watcher",
-  "title": "market watcher",
-  "description": "Tracks any ticker using Yahoo Finance API",
+  "title": "Menu Bar Market Tracker",
+  "description": "Track any ticker using Yahoo Finance API, directly from the menu bar.",
   "icon": "command-icon.png",
   "author": "marco_capano",
   "categories": [
@@ -12,8 +12,8 @@
   "commands": [
     {
       "name": "index",
-      "title": "market watcher",
-      "description": "Template for showing a menu bar extra",
+      "title": "Launch Market Watcher menu bar widget",
+      "description": "Activates a menu bar widget that shows the price of the tickers you are tracking.",
       "mode": "menu-bar"
     }
   ],
@@ -23,12 +23,12 @@
         "type": "textfield",
         "description": "Comma separated list of tickers to track",
         "placeholder": "SPY, VOO, VWRL.L",
-        "default": "SPY",
+        "default": "SPY, VOO, VWRL.L",
         "required": true
       }
   ],
   "dependencies": {
-    "@raycast/api": "^1.80.0",
+    "@raycast/api": "^1.81.2",
     "@raycast/utils": "^1.15.0",
     "yahoo-finance2": "^2.11.3"
   },
